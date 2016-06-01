@@ -18,9 +18,6 @@
 		"symfony/process": "dev-master"
 	},
 	"autoload": {
-		"classmap": [
-			"src/migrations"
-		],
 		"psr-4": {
 			"Imvkmark\\L5Thumber\\": "src/L5Thumber"
 		},
@@ -35,7 +32,7 @@
 	"repositories": [
 		{
 			"type": "composer",
-			"url": "http://packagist.phpcomposer.com"
+			"url": "https://packagist.phpcomposer.com"
 		},
 		{
 			"packagist": false

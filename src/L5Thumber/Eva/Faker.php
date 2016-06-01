@@ -12,6 +12,18 @@ class Faker {
 
 	protected $cacher;
 
+	public function __construct($sourceSite = null) {
+		if (false === class_exists('Requests')) {
+			throw new Exception\BadFunctionCallException(sprintf(
+				'Library Requests not installed'
+			));
+		}
+
+		if ($sourceSite) {
+			$this->setSourceSite($sourceSite);
+		}
+	}
+
 	public function getCacher() {
 		if ($this->cacher) {
 			return $this->cacher;
@@ -47,7 +59,7 @@ class Faker {
 
 	public function setSourceSite($sourceSite) {
 		$sourceSite = strtolower($sourceSite);
-		if (false === in_array($sourceSite, ['flickr', 'picasa'])) {
+		if (false === in_array($sourceSite, ['flickr', 'picasa', 'so'])) {
 			$sourceSite = 'picasa';
 		}
 		$this->sourceSite = $sourceSite;
@@ -59,6 +71,9 @@ class Faker {
 		switch ($sourceSite) {
 			case 'flickr':
 				$rss = 'http://www.flickr.com/explore?data=1';
+				break;
+			case 'so':
+				$rss = 'http://image.so.com/j?q=风景&src=srp&sn=60&pn=50';
 				break;
 			case 'picasa':
 			default:
@@ -80,28 +95,20 @@ class Faker {
 				$url   = $entry[rand(0, $count - 1)]->sizes->c->url; //use medium size
 				break;
 			case 'picasa':
-			default:
 				$entry = $data->feed->entry;
 				$count = count($entry);
 				$url   = $entry[rand(0, $count - 1)]->content->src;
+				break;
+			case 'so':
+			default:
+				$entry = $data->list;
+				$count = count($entry);
+				$url   = $entry[rand(0, $count - 1)]->thumb;
 		}
 		return $url;
-
 	}
 
 	public function getFile() {
 		return $this->process();
-	}
-
-	public function __construct($sourceSite = null) {
-		if (false === class_exists('Requests')) {
-			throw new Exception\BadFunctionCallException(sprintf(
-				'Library Requests not installed'
-			));
-		}
-
-		if ($sourceSite) {
-			$this->setSourceSite($sourceSite);
-		}
 	}
 }

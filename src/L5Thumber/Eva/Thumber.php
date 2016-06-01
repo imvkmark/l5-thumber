@@ -6,53 +6,94 @@ use Imagine\Image\ImagineInterface;
 use Imagine\Image\Point;
 use Imvkmark\L5Thumber\Eva\Config\Config;
 
+/**
+ * 图片的缩略图处理
+ * Class Thumber
+ * @package Imvkmark\L5Thumber\Eva
+ */
 class Thumber {
 
 	/**
-	 * @var Config
+	 * Thumber config 对象
+	 * @var \Imvkmark\L5Thumber\Eva\Config\Config
 	 */
 	protected $config;
 
 	/**
+	 * 图片处理类
 	 * @var Imagine\Image\ImageInterface
 	 */
 	protected $image;
 
 	/**
+	 * 图片选项
 	 * @var array
 	 */
 	protected $imageOptions = [];
 
 	/**
+	 * 图片处理类
 	 * @var Imagine\Image\ImagineInterface
 	 */
 	protected $thumber;
 
 	/**
+	 * 保存的地址
 	 * @var Url
 	 */
 	protected $url;
 
 	/**
+	 * 参数
 	 * @var Parameters
 	 */
 	protected $params;
 
+	/**
+	 * 文件系统
+	 * @type
+	 */
 	protected $filesystem;
 
 	/**
+	 * 源文件
 	 * @var mixed
 	 */
-	protected $sourcefile;
+	protected $sourceFile;
 
+	/**
+	 * @type
+	 */
 	protected $faker;
 
+	/**
+	 * @type
+	 */
 	protected $cacher;
 
+	/**
+	 * 进程中
+	 * @type bool
+	 */
 	protected $processed = false;
+
+	/**
+	 * 是否进行图片优化
+	 * @type bool
+	 */
 	protected $optimized = false;
+
+	/**
+	 * 优化的图像
+	 * @type
+	 */
 	protected $optimizedImage;
 
+
+	/**
+	 * 缓存器
+	 * @return Cacher
+	 */
 	public function getCacher() {
 		if ($this->cacher) {
 			return $this->cacher;
@@ -65,15 +106,15 @@ class Thumber {
 		return $this;
 	}
 
-	public function getThumber($sourcefile = null, $adapter = null) {
+	public function getThumber($sourceFile = null, $adapter = null) {
 		if ($this->thumber) {
 			return $this->thumber;
 		}
 
 		$thumber = $this->createThumber($adapter);
 
-		if ($sourcefile) {
-			$this->image = $thumber->open($sourcefile);
+		if ($sourceFile) {
+			$this->image = $thumber->open($sourceFile);
 		}
 		return $this->thumber = $thumber;
 	}
@@ -133,68 +174,68 @@ class Thumber {
 		return $this->filesystem = new Filesystem();
 	}
 
-	public function getSourcefile() {
-		if ($this->sourcefile) {
-			return $this->sourcefile;
+	/**
+	 * 获取源文件位置地址
+	 * @return mixed|string
+	 */
+	public function getSourceFile() {
+		if ($this->sourceFile) {
+			return $this->sourceFile;
 		}
 
+		// ~/uploads
 		$fileRootPath = $this->config->source_path;
-		$filePath     = $this->url->getImagePath();
-		$fileName     = $this->url->getImageName();
-
+		// /some/directory
+		$filePath = $this->url->getImagePath();
+		// demo.jpg
+		$fileName = $this->url->getImageName();
 		if (is_dir($fileRootPath)) {
-
 			if (!$fileName) {
 				throw new Exception\InvalidArgumentException(sprintf("Request an empty filename"));
 			}
-			$sourcefile     = $fileRootPath . $filePath . '/' . $fileName;
-			$systemEncoding = $this->config->system_file_encoding;
-			$sourcefile     = urldecode($sourcefile);
+			$sourceFile     = $fileRootPath . $filePath . '/' . $fileName;
+			$systemEncoding = $this->config->get('system_file_encoding');
+			$sourceFile     = urldecode($sourceFile);
 			if ($systemEncoding || $systemEncoding != 'UTF-8') {
-				$sourcefile = iconv('UTF-8', $this->config->system_file_encoding, $sourcefile);
+				$sourceFile = iconv('UTF-8', $this->config->get('system_file_encoding'), $sourceFile);
 			}
-
 		} elseif (is_file($fileRootPath)) {
-
 			if (!Feature\ZipReader::isSupport()) {
 				throw new Exception\BadFunctionCallException(sprintf("Your system not support ZipArchive feature"));
 			}
-
-			$sourcefile = Feature\ZipReader::getStreamPath(urldecode($filePath . '/' . $fileName), $fileRootPath, $this->config->zip_file_encoding);
-
+			$sourceFile = Feature\ZipReader::getStreamPath(urldecode($filePath . '/' . $fileName), $fileRootPath, $this->config->get('zip_file_encoding'));
 		} else {
-
 			throw new Exception\IOException(sprintf(
 				"Source file not readable %s", $fileRootPath
 			));
 
 		}
 
-		return $this->sourcefile = $sourcefile;
+		return $this->sourceFile = $sourceFile;
 	}
 
-	public function setSourcefile($sourcefile) {
-		$this->sourcefile = $sourcefile;
+	public function setSourceFile($sourceFile) {
+		$this->sourceFile = $sourceFile;
 		return $this;
 	}
 
-	public function sourcefileExsit() {
-		$sourcefile     = $this->getSourcefile();
-		$sourcefilePath = substr($sourcefile, 0, strrpos($sourcefile, '.'));
+	public function sourceFileExist() {
+		$sourceFile     = $this->getSourceFile();
+		$sourceFilePath = substr($sourceFile, 0, strrpos($sourceFile, '.'));
 		$fileExist      = false;
 
-		if (0 === strpos($sourcefilePath, 'zip://')) {
-			$files = Feature\ZipReader::glob($sourcefilePath . '.*');
+		if (0 === strpos($sourceFilePath, 'zip://')) {
+			$files = Feature\ZipReader::glob($sourceFilePath . '.*');
 			if ($files) {
-				$streamPath = Feature\ZipReader::parseStreamPath($sourcefile);
-				$sourcefile = Feature\ZipReader::getStreamPath($files[0]['name'], $streamPath['zipfile']);
-				$this->setSourcefile($sourcefile);
+				$streamPath = Feature\ZipReader::parseStreamPath($sourceFile);
+				$sourceFile = Feature\ZipReader::getStreamPath($files[0]['name'], $streamPath['zipfile']);
+				$this->setSourceFile($sourceFile);
 				$fileExist = true;
 			}
 		} else {
 			//Not use file system, instead of glob
-			foreach (glob($sourcefilePath . '.*') as $sourcefile) {
-				$this->setSourcefile($sourcefile);
+			foreach (glob($sourceFilePath . '.*') as $sourceFile) {
+				$this->setSourceFile($sourceFile);
 				$fileExist = true;
 				break;
 			}
@@ -218,6 +259,10 @@ class Thumber {
 		return $this;
 	}
 
+	/**
+	 * 重定向到新的地址
+	 * @param $imageName
+	 */
 	public function redirect($imageName) {
 		$this->getUrl()->setUrlImageName($imageName);
 		$newUrl = $this->getUrl()->toString();
@@ -233,11 +278,10 @@ class Thumber {
 		$extension = $this->getParameters()->getExtension();
 		$this->process();
 		$this->getImage();
-
-		if ($config->cache) {
+		if ($config->get('cache')) {
 			$this->saveImage();
 		}
-		$this->showImage($extension);
+		return $this->showImage($extension);
 	}
 
 
@@ -256,7 +300,9 @@ class Thumber {
 		if (!$path) {
 			$config    = $this->getConfig();
 			$cacheRoot = $config->thumb_cache_path;
-			$imagePath = '/' . $this->getUrl()->getUrlKey() . $this->getUrl()->getImagePath();
+			// ~/thumber/config/some/directory
+			$imagePath = '/' . $this->getUrl()->getRoute() . '/' . $this->getUrl()->getConfigKey() . $this->getUrl()->getImagePath();
+			// ~/thumber/config/some/directory/demo,q_60,w_122.jpg
 			$cachePath = $cacheRoot . $imagePath . '/' . $this->getUrl()->getUrlImageName();
 			$pathLevel = count(explode('/', $imagePath));
 			$this->getFilesystem()->prepareDirectoryStructure($cachePath, $pathLevel);
@@ -281,18 +327,39 @@ class Thumber {
 
 	protected function showImage($extension) {
 		if (true === $this->optimized) {
-			$this->showOptimizedImage($extension);
+			return $this->showOptimizedImage($extension);
 		}
-
-		$this->showNormalImage($extension);
+		return $this->showNormalImage($extension);
 	}
 
 	protected function showNormalImage($extension) {
-		$this->getImage()->show($extension, $this->getImageOptions());
+		ob_clean();
+		ob_start();
+		$imageOption = $this->getImageOptions();
+		echo $this->getImage()->get($extension, $imageOption);
+		$content = ob_get_clean();
+		$mime    = $this->getMimeType($extension);
+		return response($content, 200, [
+			'Content-Type' => $mime,
+		]);
 	}
 
 	protected function showOptimizedImage($extension) {
-		$mimeTypes = [
+		ob_clean();
+		ob_start();
+		$handle = fopen($this->optimizedImage, "r");
+		echo stream_get_contents($handle);
+		unlink($this->optimizedImage);
+		fclose($handle);
+		$content = ob_get_clean();
+		$mime    = $this->getMimeType($extension);
+		return response($content, 200, [
+			'Content-Type' => $mime,
+		]);
+	}
+
+	private function getMimeType($extension) {
+		static $mimeTypes = [
 			'jpeg' => 'image/jpeg',
 			'jpg'  => 'image/jpeg',
 			'gif'  => 'image/gif',
@@ -300,11 +367,7 @@ class Thumber {
 			'wbmp' => 'image/vnd.wap.wbmp',
 			'xbm'  => 'image/xbm',
 		];
-		header('Content-type: ' . $mimeTypes[$extension]);
-		$handle = fopen($this->optimizedImage, "r");
-		echo stream_get_contents($handle);
-		unlink($this->optimizedImage);
-		fclose($handle);
+		return isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : $mimeTypes['png'];
 	}
 
 	protected function process() {
@@ -326,28 +389,28 @@ class Thumber {
 
 		//Dummy file will replace source file
 		$dummy = $params->getDummy();
-		if ($this->sourcefileExsit()) {
+		if ($this->sourceFileExist()) {
 			if ($dummy) {
 				throw new Exception\IOException(sprintf(
-					"Dummy file name conflict with exsit file %s", $this->getSourcefile()
+					"Dummy file name conflict with exist file %s", $this->getSourceFile()
 				));
 			}
 		} else {
 			if (!$dummy) {
 				throw new Exception\IOException(sprintf(
-					"Request file not find in %s", $this->getSourcefile()
+					"Request file not find in %s", $this->getSourceFile()
 				));
 			}
 		}
 		if ($dummy) {
 			$faker      = $this->getFaker($dummy);
-			$sourcefile = $faker->getFile();
+			$sourceFile = $faker->getFile();
 		} else {
-			$sourcefile = $this->getSourcefile();
+			$sourceFile = $this->getSourceFile();
 		}
 
 		//Start reading file
-		$this->getThumber($sourcefile);
+		$this->getThumber($sourceFile);
 		$params->setImageSize(
 			$this->getImage()->getSize()->getWidth(),
 			$this->getImage()->getSize()->getHeight()
@@ -373,9 +436,13 @@ class Thumber {
 		return $this;
 	}
 
-
+	/**
+	 * 缩略图处理器
+	 * @param null $adapter
+	 * @return Imagine\Gd\Imagine|Imagine\Gmagick\Imagine|Imagine\Imagick\Imagine
+	 */
 	protected function createThumber($adapter = null) {
-		$adapter = $adapter ? $adapter : strtolower($this->config->adapter);
+		$adapter = $adapter ? $adapter : strtolower($this->config->get('adapter'));
 		switch ($adapter) {
 			case 'gd':
 				$thumber = new Imagine\Gd\Imagine();
@@ -566,6 +633,7 @@ class Thumber {
 			return $this;
 		}
 
+		/** @type Imagine\Image\ImageInterface $image */
 		$image   = $this->getImage();
 		$effects = $this->getImage()->effects('EvaThumber\\' . get_class($image) . '\\Effects');
 		$blend   = 'EvaThumber\\' . get_class($image) . '\\Blend::layer';
@@ -589,13 +657,11 @@ class Thumber {
 				$image->effects('EvaThumber\\' . get_class($layer) . '\\Effects')->mosaic()->borderline()->emboss();
 				$image->paste($layer, new Point(0, 0), 100, $blend . 'VividLight');
 				break;
-
 			case 'softenface':
 				$layer = $image->copy();
 				$image->effects('EvaThumber\\' . get_class($layer) . '\\Effects')->gaussBlur();
 				$image->paste($layer, new Point(0, 0), 100, $blend . 'Screen');
 				$effects->brightness(-10);
-
 				break;
 			case 'lomo':
 

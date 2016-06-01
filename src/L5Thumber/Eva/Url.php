@@ -1,6 +1,5 @@
 <?php namespace Imvkmark\L5Thumber\Eva;
 
-
 /**
  * Parse Url as EvaThumber necessary parts
  * - Example : http://localhost/EvaThumber/thumb/zip/archive/zipimage,w_100.jpg?query=123
@@ -50,15 +49,16 @@ class Url {
 	 */
 	protected $urlPath;
 
-	/**
-	 * @var string
-	 */
-	protected $urlPrefix;
 
 	/**
 	 * @var string
 	 */
 	protected $urlScriptName;
+
+	/**
+	 * @type string
+	 */
+	protected $route;
 
 	/**
 	 * @var string
@@ -90,9 +90,13 @@ class Url {
 	 */
 	protected $imageName;
 
-	protected $urlKey;
-
 	protected $config;
+
+	/**
+	 * 配置键
+	 * @type
+	 */
+	protected $configKey;
 
 	public function toArray() {
 		return [
@@ -103,8 +107,8 @@ class Url {
 			'query'             => $this->getQuery(),
 			'urlScriptName'     => $this->getUrlScriptName(), //from $_SERVER
 			'urlRewritePath'    => $this->getUrlRewritePath(),
-			'urlPrefix'         => $this->getUrlPrefix(),
-			'urlKey'            => $this->getUrlKey(),
+			'configKey'         => $this->getConfigKey(),
+			'urlKey'            => $this->getRoute(),
 			'urlImagePath'      => $this->getUrlImagePath(),
 			'urlImageName'      => $this->getUrlImageName(),
 			'urlRewriteEnabled' => $this->getUrlRewriteEnabled(),
@@ -146,7 +150,6 @@ class Url {
 	}
 
 	public function getUrlPath() {
-
 		if ($this->urlPath) {
 			return $this->urlPath;
 		}
@@ -156,28 +159,35 @@ class Url {
 		}
 
 		$url = $this->urlString;
-
 		$url = parse_url($url);
 		return $this->urlPath = isset($url['path']) ? $url['path'] : '';
 	}
 
-	public function getUrlPrefix() {
-		return $this->urlPrefix = $this->config->prefix;
+	/**
+	 * 获取路由
+	 * /{route}/{config}/demo.jpg
+	 * @return string
+	 */
+	public function getRoute() {
+		$urlImagePath      = $this->getUrlImagePath();
+		$urlImagePathArray = explode('/', ltrim($urlImagePath, '/'));
+		if (count($urlImagePathArray) < 2) {
+			return '';
+		}
+		return $this->route = $urlImagePathArray[0];
 	}
 
 	/**
+	 * 配置键
 	 * @return string
 	 */
-	public function getUrlKey() {
-		if ($this->urlKey) {
-			return $this->urlKey;
-		}
-		parse_str($this->getQuery(), $arrQs);
-		$arrQsKeys = array_keys($arrQs);
-		if (count($arrQsKeys) < 1) {
+	public function getConfigKey() {
+		$urlImagePath      = $this->getUrlImagePath();
+		$urlImagePathArray = explode('/', ltrim($urlImagePath, '/'));
+		if (count($urlImagePathArray) < 2) {
 			return '';
 		}
-		return $this->urlKey = $arrQsKeys[0];
+		return $this->configKey = $urlImagePathArray[1];
 	}
 
 	public function setUrlScriptName($urlScriptName) {
@@ -232,9 +242,7 @@ class Url {
 			return $this->urlImagePath;
 		}
 
-		parse_str($this->getQuery(), $arrQs);
-
-		$urlPath = $arrQs[$this->urlKey];
+		$urlPath = $this->getUrlPath();
 		if (!$urlPath) {
 			return '';
 		}
@@ -259,7 +267,6 @@ class Url {
 		}
 
 		$urlImagePath = $this->getUrlImagePath();
-
 		if (!$urlImagePath) {
 			return $this->urlImageName = '';
 		}
@@ -303,20 +310,27 @@ class Url {
 		return $this;
 	}
 
+	/**
+	 * 图片的真实目录 `/some/directory`
+	 * @return string
+	 */
 	public function getImagePath() {
-
 		$urlImagePath      = $this->getUrlImagePath();
 		$urlImagePathArray = explode('/', ltrim($urlImagePath, '/'));
-
-		// 移除 prefix
-		$config = $this->getConfig();
-		if ($config->prefix == $urlImagePathArray[0]) {
-			array_shift($urlImagePathArray);
+		if (count($urlImagePathArray) < 3) {
+			return '';
 		}
 
-		//remove imagename
+		//remove route
+		array_shift($urlImagePathArray);
+		// remove config
+		array_shift($urlImagePathArray);
+		//remove image name
 		array_pop($urlImagePathArray);
-		return $this->imagePath = '/' . implode('/', $urlImagePathArray);
+
+		$this->imagePath = '/' . implode('/', $urlImagePathArray);
+
+		return $this->imagePath;
 
 	}
 
@@ -362,7 +376,9 @@ class Url {
 			return $this->urlRewritePath = $scriptName;
 		}
 
-		return $this->urlRewritePath = $this->getUrlPath();
+		$rewritePathArray = explode('/', $scriptName);
+		array_pop($rewritePathArray);
+		return $this->urlRewritePath = implode('/', $rewritePathArray);
 	}
 
 
@@ -372,11 +388,7 @@ class Url {
 			return false;
 		}
 
-		if (!$this->getUrlPrefix()) {
-			return false;
-		}
-
-		if (!$this->getUrlKey()) {
+		if (!$this->getRoute()) {
 			return false;
 		}
 
@@ -392,26 +404,28 @@ class Url {
 		if (!$host) {
 			return '';
 		}
-
 		$port = $this->getPort() ? ':' . $this->getPort() : '';
 
 		$path = $this->getUrlRewritePath();
 
-		$qs = '';
-		if ($urlPrefix = $this->getUrlPrefix()) {
-			$qs .= '/' . $urlPrefix;
+		if ($urlKey = $this->getRoute()) {
+			$path .= "/$urlKey";
 		}
+
+		if ($configKey = $this->getConfigKey()) {
+			$path .= "/$configKey";
+		}
+
 		if ($imagePath = $this->getImagePath()) {
-			$qs .= $imagePath;
+			$path .= $imagePath;
 		}
 
 		if ($imageName = $this->getUrlImageName()) {
-			$qs .= '/' . $imageName;
+			$path .= '/' . $imageName;
 		}
 
 		$url = $this->getScheme() . '://' . $host . $port . $path;
-		$url .= '?' . $this->getUrlKey() . '=' . $qs;
-
+		$url .= $this->getQuery() ? '?' . $this->getQuery() : '';
 		return $url;
 	}
 
@@ -445,10 +459,12 @@ class Url {
 		return $this->config;
 	}
 
-	public function __construct($url = null, $config = null) {
-		$this->config    = $config;
+	public function __construct($url = null, Config\Config $config = null) {
+		$this->config = $config;
+
 		$urlString       = $url ? $url : $this->getCurrentUrl();
 		$this->urlString = $urlString;
+
 		if ($urlString) {
 			$url           = parse_url($urlString);
 			$this->scheme  = isset($url['scheme']) ? $url['scheme'] : null;
@@ -460,7 +476,7 @@ class Url {
 		if ($config == null) {
 			return;
 		}
-		$configKey     = $this->getUrlKey();
+		$configKey     = $this->getConfigKey();
 		$defaultConfig = $config->current();
 		$defaultKey    = $config->key();
 		if (isset($config->$configKey)) {

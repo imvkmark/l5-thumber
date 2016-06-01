@@ -2,7 +2,6 @@
 
 use Illuminate\Support\ServiceProvider;
 use Imvkmark\L5Thumber\Eva\Config\Config;
-use Imvkmark\L5Thumber\Eva\Thumber;
 
 class L5ThumberServiceProvider extends ServiceProvider {
 
@@ -19,7 +18,7 @@ class L5ThumberServiceProvider extends ServiceProvider {
 	public function boot() {
 		$this->publishes([
 			__DIR__ . '/../config/thumber.php' => config_path('l5-thumber.php'),
-		]);
+		], 'sour-lemon');
 	}
 
 	/**
@@ -33,15 +32,10 @@ class L5ThumberServiceProvider extends ServiceProvider {
 		}
 		$this->mergeConfigFrom(__DIR__ . '/../config/thumber.php', 'l5-thumber');
 
-		$this->app->bind('lemon.l5-thumber.config', function ($app) {
+		$this->app->bind('l5.thumber.config', function ($app) {
 			$config = $app->config->get('l5-thumber');
-
-			$app['lemon.l5-thumber.config'] = new Config($config);
-			return $app['lemon.l5-thumber.config'];
-		});
-
-		$this->app->singleton('lemon.l5-thumber.thumber', function ($app) {
-			return new Thumber($app['lemon.l5-thumber.config']);
+			$app['l5.thumber.config'] = new Config($config);
+			return $app['l5.thumber.config'];
 		});
 	}
 

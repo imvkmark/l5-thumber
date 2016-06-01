@@ -3,10 +3,10 @@ return [
 	'thumber' => [
 		//0: redirect to error png | 1: redirect to error png with error url msg | 2: throw an exception
 		'debug'                => 0,
-		'source_path'          => '/data/www/larframe/public/uploads',
+		'source_path'          => '/media/web/www/larxd/public/uploads',
 		'system_file_encoding' => 'UTF-8',
 		'zip_file_encoding'    => 'GB2312',
-		'thumb_cache_path'     => '/data/www/larframe/public/uploads',
+		'thumb_cache_path'     => '/media/web/www/larxd/public/uploads',
 		'system_cache_path'    => null,
 		// GD | Imagick | Gmagick
 		'adapter'              => 'GD',

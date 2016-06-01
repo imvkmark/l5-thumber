@@ -11,10 +11,33 @@ use Iterator;
  * on construction.
  * Implements Countable, Iterator and ArrayAccess
  * to facilitate easy access to the data.
- * @property  $disable_operates array  禁用某些操作
- * @property  $prefix           string 前缀
- * @property  $thumbers         ArrayAccess
- * @property  $source_path      string 源码路径
+ * @property  $debug                          int  0: redirect to error png | 1: redirect to error png with error url msg | 2: throw an exception
+ * @property  $disable_operates               array  禁用某些操作
+ * @property  $prefix                         string 前缀
+ * @property  $system_file_encoding           系统文件编码
+ * @property  $zip_file_encoding
+ * @property  $thumb_cache_path
+ * @property  $system_cache_path
+ * @property  $adapter
+ * @property  $cache
+ * @property  $error_url
+ * @property  $allow_stretch
+ * @property  $min_width
+ * @property  $min_height
+ * @property  $max_width
+ * @property  $max_height
+ * @property  $quality
+ * @property  $blending_layer
+ * @property  $redirect_referer
+ * @property  $face_detect
+ * @property  $png_optimize
+ * @property  $allow_extensions
+ * @property  $allow_sizes 
+ * @property  $watermark
+ * @property  $dynamicUrlDisabled
+ * @property  $class_separator
+ * @property  $classes
+ * @property  $source_path                    string 源码路径
  */
 class Config implements Countable, Iterator, ArrayAccess {
 

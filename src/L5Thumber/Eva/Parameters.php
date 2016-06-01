@@ -114,7 +114,7 @@ class Parameters {
 
 	public function setDummy($dummy) {
 		$dummy = strtolower($dummy);
-		if (false === in_array($dummy, ['flickr', 'picasa'])) {
+		if (false === in_array($dummy, ['flickr', 'picasa', 'so'])) {
 			$this->dummy = null;
 			return $this;
 		}
